@@ -73,7 +73,7 @@ class Competition(Base):
 
     event_date = Column(Date, nullable=False)
 
-    result_time = Column(String(20), nullable=True)
+    result_time = Column(String(50), nullable=True)
     result_rank_overall = Column(Integer, nullable=True)
     result_rank_category = Column(Integer, nullable=True)
     result_url = Column(String(500), nullable=True)
