@@ -5,7 +5,7 @@ import { ResultsPage } from "./pages/ResultsPage";
 
 export default function App() {
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto", padding: 20 }}>
+    <div style={{ maxWidth: 1200, margin: "0 auto", padding: 20 }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h1 style={{ fontSize: 22, margin: 0 }}>🏁 Agenda Compétitions</h1>
         <nav style={{ display: "flex", gap: 16, alignItems: "center" }}>

@@ -1,11 +1,12 @@
 import { STATUS_LABELS, type CompetitionStatus } from "../api/types";
 
-const COLORS: Record<CompetitionStatus, string> = {
+export const STATUS_COLORS: Record<CompetitionStatus, string> = {
   a_faire: "var(--warning)",
   paye: "var(--info)",
   annule: "var(--danger)",
   termine: "var(--success)",
 };
+const COLORS = STATUS_COLORS;
 
 export function StatusBadge({ status }: { status: CompetitionStatus }) {
   return (
