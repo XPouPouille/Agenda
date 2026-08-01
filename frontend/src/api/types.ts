@@ -7,6 +7,8 @@ export const STATUS_LABELS: Record<CompetitionStatus, string> = {
   termine: "Terminé",
 };
 
+export const STATUS_ORDER: CompetitionStatus[] = ["a_faire", "paye", "termine", "annule"];
+
 export type FormatType = "XS" | "S" | "M" | "L" | "XL" | "XXL";
 
 export const FORMAT_TYPES: FormatType[] = ["XS", "S", "M", "L", "XL", "XXL"];

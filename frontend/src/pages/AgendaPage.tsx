@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import type { Competition, CompetitionStatus, Discipline } from "../api/types";
-import { STATUS_LABELS } from "../api/types";
+import { STATUS_LABELS, STATUS_ORDER } from "../api/types";
 import { CalendarSidebar } from "../components/CalendarSidebar";
 import { CompetitionCard } from "../components/CompetitionCard";
 import { CompetitionForm } from "../components/CompetitionForm";
@@ -10,7 +10,7 @@ import { SummaryBar } from "../components/SummaryBar";
 export function AgendaPage() {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
-  const [statusFilter, setStatusFilter] = useState<CompetitionStatus | "">("");
+  const [statusFilter, setStatusFilter] = useState<Set<CompetitionStatus>>(new Set());
   const [disciplineFilter, setDisciplineFilter] = useState<string>("");
   const [editing, setEditing] = useState<Competition | "new" | null>(null);
   const [newDisciplineName, setNewDisciplineName] = useState("");
@@ -23,7 +23,6 @@ export function AgendaPage() {
   async function reload() {
     const [comps, discs] = await Promise.all([
       api.listCompetitions({
-        status: statusFilter || undefined,
         discipline_id: disciplineFilter ? Number(disciplineFilter) : undefined,
         year: calendarYear,
       }),
@@ -36,10 +35,20 @@ export function AgendaPage() {
   useEffect(() => {
     reload().catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, disciplineFilter, calendarYear]);
+  }, [disciplineFilter, calendarYear]);
+
+  function toggleStatus(status: CompetitionStatus) {
+    setStatusFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
+  }
 
   const visibleCompetitions = useMemo(() => {
     const filtered = competitions.filter((c) => {
+      if (statusFilter.size > 0 && !statusFilter.has(c.status)) return false;
       const d = new Date(c.event_date);
       if (calendarMonth !== null && d.getMonth() !== calendarMonth) return false;
       if (calendarDay !== null && d.getDate() !== calendarDay) return false;
@@ -47,7 +56,7 @@ export function AgendaPage() {
     });
     const sorted = [...filtered].sort((a, b) => a.event_date.localeCompare(b.event_date));
     return sortOrder === "asc" ? sorted : sorted.reverse();
-  }, [competitions, calendarMonth, calendarDay, sortOrder]);
+  }, [competitions, statusFilter, calendarMonth, calendarDay, sortOrder]);
 
   function handleYearChange(year: number) {
     setCalendarYear(year);
@@ -73,14 +82,18 @@ export function AgendaPage() {
         <SummaryBar />
 
         <div className="card" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as CompetitionStatus | "")}>
-            <option value="">Tous les statuts</option>
-            {Object.entries(STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {STATUS_ORDER.map((status) => (
+              <label key={status} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={statusFilter.has(status)}
+                  onChange={() => toggleStatus(status)}
+                />
+                {STATUS_LABELS[status]}
+              </label>
             ))}
-          </select>
+          </div>
           <select value={disciplineFilter} onChange={(e) => setDisciplineFilter(e.target.value)}>
             <option value="">Toutes disciplines</option>
             {disciplines.map((d) => (
