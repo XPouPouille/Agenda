@@ -10,6 +10,7 @@ import {
 
 const EMPTY: CompetitionInput = {
   name: "",
+  is_favorite: false,
   status: "a_faire",
   competition_url: "",
   price: null,

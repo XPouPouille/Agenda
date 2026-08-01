@@ -48,6 +48,8 @@ export const api = {
     request<Competition>(`/competitions/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteCompetition: (id: number) =>
     request<void>(`/competitions/${id}`, { method: "DELETE" }),
+  toggleFavorite: (id: number) =>
+    request<Competition>(`/competitions/${id}/favorite`, { method: "PATCH" }),
   exportToCalendar: (id: number) =>
     request<{ gcal_event_id: string; html_link: string }>(
       `/competitions/${id}/export-calendar`,

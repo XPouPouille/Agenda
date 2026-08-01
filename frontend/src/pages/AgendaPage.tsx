@@ -12,6 +12,7 @@ export function AgendaPage() {
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [statusFilter, setStatusFilter] = useState<Set<CompetitionStatus>>(new Set());
   const [disciplineFilter, setDisciplineFilter] = useState<string>("");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [editing, setEditing] = useState<Competition | "new" | null>(null);
   const [newDisciplineName, setNewDisciplineName] = useState("");
 
@@ -49,6 +50,7 @@ export function AgendaPage() {
   const visibleCompetitions = useMemo(() => {
     const filtered = competitions.filter((c) => {
       if (statusFilter.size > 0 && !statusFilter.has(c.status)) return false;
+      if (favoritesOnly && !c.is_favorite) return false;
       const d = new Date(c.event_date);
       if (calendarMonth !== null && d.getMonth() !== calendarMonth) return false;
       if (calendarDay !== null && d.getDate() !== calendarDay) return false;
@@ -56,7 +58,7 @@ export function AgendaPage() {
     });
     const sorted = [...filtered].sort((a, b) => a.event_date.localeCompare(b.event_date));
     return sortOrder === "asc" ? sorted : sorted.reverse();
-  }, [competitions, statusFilter, calendarMonth, calendarDay, sortOrder]);
+  }, [competitions, statusFilter, favoritesOnly, calendarMonth, calendarDay, sortOrder]);
 
   function handleYearChange(year: number) {
     setCalendarYear(year);
@@ -94,6 +96,14 @@ export function AgendaPage() {
               </label>
             ))}
           </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={favoritesOnly}
+              onChange={(e) => setFavoritesOnly(e.target.checked)}
+            />
+            ★ Favoris
+          </label>
           <select value={disciplineFilter} onChange={(e) => setDisciplineFilter(e.target.value)}>
             <option value="">Toutes disciplines</option>
             {disciplines.map((d) => (
@@ -144,6 +154,7 @@ export function AgendaPage() {
               competition={c}
               onEdit={() => setEditing(c)}
               onDeleted={reload}
+              onUpdated={reload}
             />
           ))}
           {visibleCompetitions.length === 0 && (

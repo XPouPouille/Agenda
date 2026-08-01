@@ -28,6 +28,7 @@ export interface Discipline {
 export interface Competition {
   id: number;
   name: string;
+  is_favorite: boolean;
   status: CompetitionStatus;
   competition_url: string | null;
   price: number | null;

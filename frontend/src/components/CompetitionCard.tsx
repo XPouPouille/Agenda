@@ -8,17 +8,29 @@ interface Props {
   competition: Competition;
   onEdit: () => void;
   onDeleted: () => void;
+  onUpdated: () => void;
 }
 
-export function CompetitionCard({ competition, onEdit, onDeleted }: Props) {
+export function CompetitionCard({ competition, onEdit, onDeleted, onUpdated }: Props) {
   const [showMap, setShowMap] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [togglingFavorite, setTogglingFavorite] = useState(false);
 
   async function handleDelete() {
     if (!confirm(`Supprimer "${competition.name}" ?`)) return;
     await api.deleteCompetition(competition.id);
     onDeleted();
+  }
+
+  async function handleToggleFavorite() {
+    setTogglingFavorite(true);
+    try {
+      await api.toggleFavorite(competition.id);
+      onUpdated();
+    } finally {
+      setTogglingFavorite(false);
+    }
   }
 
   async function handleExport() {
@@ -54,7 +66,24 @@ export function CompetitionCard({ competition, onEdit, onDeleted }: Props) {
             {competition.distance_km ? ` · ${competition.distance_km} km` : ""}
           </div>
         </div>
-        <StatusBadge status={competition.status} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={handleToggleFavorite}
+            disabled={togglingFavorite}
+            title={competition.is_favorite ? "Retirer des favoris" : "Marquer comme favori"}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: 20,
+              lineHeight: 1,
+              color: competition.is_favorite ? "#f5b301" : "var(--text-muted)",
+              padding: 0,
+            }}
+          >
+            {competition.is_favorite ? "★" : "☆"}
+          </button>
+          <StatusBadge status={competition.status} />
+        </div>
       </div>
 
       {competition.price != null && <div>Tarif : {Number(competition.price).toFixed(2)} €</div>}

@@ -78,6 +78,17 @@ def put_competition(
     return crud.update_competition(db, obj, competition)
 
 
+@router.patch("/competitions/{competition_id}/favorite", response_model=schemas.CompetitionOut)
+def toggle_favorite(competition_id: int, db: Session = Depends(get_db)):
+    obj = crud.get_competition(db, competition_id)
+    if obj is None:
+        raise HTTPException(status_code=404, detail="Compétition introuvable")
+    obj.is_favorite = not obj.is_favorite
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
 @router.delete("/competitions/{competition_id}", status_code=204)
 def delete_competition(competition_id: int, db: Session = Depends(get_db)):
     obj = crud.get_competition(db, competition_id)

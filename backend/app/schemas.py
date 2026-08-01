@@ -38,6 +38,7 @@ class DisciplineOut(DisciplineBase):
 
 class CompetitionBase(BaseModel):
     name: str
+    is_favorite: bool = False
     status: CompetitionStatus = CompetitionStatus.a_faire
     competition_url: Optional[str] = None
     price: Optional[float] = None

@@ -1,6 +1,7 @@
 import enum
 
 from sqlalchemy import (
+    Boolean,
     Column,
     Date,
     DateTime,
@@ -60,6 +61,7 @@ class Competition(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
+    is_favorite = Column(Boolean, nullable=False, default=False, server_default="false")
     status = Column(Enum(CompetitionStatus), nullable=False, default=CompetitionStatus.a_faire)
     competition_url = Column(String(500), nullable=True)
     price = Column(Numeric(10, 2), nullable=True)
