@@ -23,10 +23,7 @@ export function AgendaPage() {
 
   async function reload() {
     const [comps, discs] = await Promise.all([
-      api.listCompetitions({
-        discipline_id: disciplineFilter ? Number(disciplineFilter) : undefined,
-        year: calendarYear,
-      }),
+      api.listCompetitions({ year: calendarYear }),
       api.listDisciplines(),
     ]);
     setCompetitions(comps);
@@ -36,7 +33,7 @@ export function AgendaPage() {
   useEffect(() => {
     reload().catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [disciplineFilter, calendarYear]);
+  }, [calendarYear]);
 
   function toggleStatus(status: CompetitionStatus) {
     setStatusFilter((prev) => {
@@ -49,8 +46,12 @@ export function AgendaPage() {
 
   const visibleCompetitions = useMemo(() => {
     const filtered = competitions.filter((c) => {
-      if (statusFilter.size > 0 && !statusFilter.has(c.status)) return false;
-      if (favoritesOnly && !c.is_favorite) return false;
+      if (favoritesOnly) {
+        if (!c.is_favorite) return false;
+      } else {
+        if (statusFilter.size > 0 && !statusFilter.has(c.status)) return false;
+        if (disciplineFilter && c.discipline_id !== Number(disciplineFilter)) return false;
+      }
       const d = new Date(c.event_date);
       if (calendarMonth !== null && d.getMonth() !== calendarMonth) return false;
       if (calendarDay !== null && d.getDate() !== calendarDay) return false;
@@ -58,7 +59,7 @@ export function AgendaPage() {
     });
     const sorted = [...filtered].sort((a, b) => a.event_date.localeCompare(b.event_date));
     return sortOrder === "asc" ? sorted : sorted.reverse();
-  }, [competitions, statusFilter, favoritesOnly, calendarMonth, calendarDay, sortOrder]);
+  }, [competitions, statusFilter, disciplineFilter, favoritesOnly, calendarMonth, calendarDay, sortOrder]);
 
   function handleYearChange(year: number) {
     setCalendarYear(year);
@@ -84,13 +85,14 @@ export function AgendaPage() {
         <SummaryBar />
 
         <div className="card" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", opacity: favoritesOnly ? 0.4 : 1 }}>
             {STATUS_ORDER.map((status) => (
               <label key={status} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
                 <input
                   type="checkbox"
                   checked={statusFilter.has(status)}
                   onChange={() => toggleStatus(status)}
+                  disabled={favoritesOnly}
                 />
                 {STATUS_LABELS[status]}
               </label>
@@ -104,7 +106,12 @@ export function AgendaPage() {
             />
             ★ Favoris
           </label>
-          <select value={disciplineFilter} onChange={(e) => setDisciplineFilter(e.target.value)}>
+          <select
+            value={disciplineFilter}
+            onChange={(e) => setDisciplineFilter(e.target.value)}
+            disabled={favoritesOnly}
+            style={{ opacity: favoritesOnly ? 0.4 : 1 }}
+          >
             <option value="">Toutes disciplines</option>
             {disciplines.map((d) => (
               <option key={d.id} value={d.id}>
