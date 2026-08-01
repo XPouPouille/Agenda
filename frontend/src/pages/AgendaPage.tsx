@@ -18,6 +18,7 @@ export function AgendaPage() {
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
   const [calendarMonth, setCalendarMonth] = useState<number | null>(null);
   const [calendarDay, setCalendarDay] = useState<number | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   async function reload() {
     const [comps, discs] = await Promise.all([
@@ -38,13 +39,15 @@ export function AgendaPage() {
   }, [statusFilter, disciplineFilter, calendarYear]);
 
   const visibleCompetitions = useMemo(() => {
-    return competitions.filter((c) => {
+    const filtered = competitions.filter((c) => {
       const d = new Date(c.event_date);
       if (calendarMonth !== null && d.getMonth() !== calendarMonth) return false;
       if (calendarDay !== null && d.getDate() !== calendarDay) return false;
       return true;
     });
-  }, [competitions, calendarMonth, calendarDay]);
+    const sorted = [...filtered].sort((a, b) => a.event_date.localeCompare(b.event_date));
+    return sortOrder === "asc" ? sorted : sorted.reverse();
+  }, [competitions, calendarMonth, calendarDay, sortOrder]);
 
   function handleYearChange(year: number) {
     setCalendarYear(year);
@@ -86,6 +89,13 @@ export function AgendaPage() {
               </option>
             ))}
           </select>
+          <button
+            className="btn secondary"
+            onClick={() => setSortOrder((o) => (o === "asc" ? "desc" : "asc"))}
+            title="Trier par date"
+          >
+            Date {sortOrder === "asc" ? "↑" : "↓"}
+          </button>
 
           <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
             <input
