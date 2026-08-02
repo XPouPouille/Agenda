@@ -142,10 +142,9 @@ export function AgendaPage() {
           </div>
         </div>
 
-        {editing && (
+        {editing === "new" && (
           <CompetitionForm
             disciplines={disciplines}
-            initial={editing === "new" ? undefined : editing}
             onCancel={() => setEditing(null)}
             onSaved={() => {
               setEditing(null);
@@ -156,13 +155,25 @@ export function AgendaPage() {
 
         <div style={{ display: "grid", gap: 12 }}>
           {visibleCompetitions.map((c) => (
-            <CompetitionCard
-              key={c.id}
-              competition={c}
-              onEdit={() => setEditing(c)}
-              onDeleted={reload}
-              onUpdated={reload}
-            />
+            <div key={c.id} style={{ display: "grid", gap: 12 }}>
+              {editing !== "new" && editing?.id === c.id && (
+                <CompetitionForm
+                  disciplines={disciplines}
+                  initial={editing}
+                  onCancel={() => setEditing(null)}
+                  onSaved={() => {
+                    setEditing(null);
+                    reload();
+                  }}
+                />
+              )}
+              <CompetitionCard
+                competition={c}
+                onEdit={() => setEditing(c)}
+                onDeleted={reload}
+                onUpdated={reload}
+              />
+            </div>
           ))}
           {visibleCompetitions.length === 0 && (
             <p style={{ color: "var(--text-muted)" }}>Aucune compétition.</p>
