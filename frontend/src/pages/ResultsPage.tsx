@@ -10,7 +10,18 @@ import {
   YAxis,
 } from "recharts";
 import { api } from "../api/client";
-import type { Competition, Discipline } from "../api/types";
+import { FORMAT_TYPES, type Competition, type Discipline } from "../api/types";
+
+type SortKey = "date" | "distance" | "format";
+
+const FORMAT_RANK = new Map(FORMAT_TYPES.map((f, i) => [f, i]));
+
+function compareNullable<T>(a: T | null, b: T | null, cmp: (a: T, b: T) => number): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return cmp(a, b);
+}
 
 function timeToSeconds(value: string | null): number | null {
   if (!value) return null;
@@ -35,6 +46,8 @@ export function ResultsPage() {
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [disciplineFilter, setDisciplineFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     api.listDisciplines().then(setDisciplines).catch(console.error);
@@ -59,6 +72,39 @@ export function ResultsPage() {
     () => Array.from(new Set(results.map((r) => r.discipline.name))),
     [results]
   );
+
+  const sortedResults = useMemo(() => {
+    const sorted = [...results].sort((a, b) => {
+      switch (sortKey) {
+        case "distance":
+          return compareNullable(a.distance_km, b.distance_km, (x, y) => x - y);
+        case "format":
+          return compareNullable(
+            a.format_type ?? null,
+            b.format_type ?? null,
+            (x, y) => (FORMAT_RANK.get(x) ?? 0) - (FORMAT_RANK.get(y) ?? 0)
+          );
+        case "date":
+        default:
+          return a.event_date.localeCompare(b.event_date);
+      }
+    });
+    return sortDir === "asc" ? sorted : sorted.reverse();
+  }, [results, sortKey, sortDir]);
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  function sortArrow(key: SortKey) {
+    if (sortKey !== key) return "";
+    return sortDir === "asc" ? " ↑" : " ↓";
+  }
 
   const chartData = useMemo(() => {
     const sorted = [...results]
@@ -121,9 +167,17 @@ export function ResultsPage() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ textAlign: "left", borderBottom: "1px solid var(--border)" }}>
-              <th>Date</th>
+              <th style={{ cursor: "pointer" }} onClick={() => toggleSort("date")}>
+                Date{sortArrow("date")}
+              </th>
               <th>Nom</th>
               <th>Discipline</th>
+              <th style={{ cursor: "pointer" }} onClick={() => toggleSort("format")}>
+                Format{sortArrow("format")}
+              </th>
+              <th style={{ cursor: "pointer" }} onClick={() => toggleSort("distance")}>
+                Distance{sortArrow("distance")}
+              </th>
               <th>Temps</th>
               <th>Général</th>
               <th>Catégorie</th>
@@ -131,7 +185,7 @@ export function ResultsPage() {
             </tr>
           </thead>
           <tbody>
-            {results.map((r) => (
+            {sortedResults.map((r) => (
               <tr key={r.id} style={{ borderBottom: "1px solid var(--border)" }}>
                 <td>{new Date(r.event_date).toLocaleDateString("fr-FR")}</td>
                 <td>{r.name}</td>
@@ -139,6 +193,8 @@ export function ResultsPage() {
                   {r.discipline.name}
                   {r.sub_discipline ? ` (${r.sub_discipline.name})` : ""}
                 </td>
+                <td>{r.format_type ?? "—"}</td>
+                <td>{r.distance_km != null ? `${r.distance_km} km` : "—"}</td>
                 <td>{r.result_time ?? "—"}</td>
                 <td>{r.result_rank_overall ?? "—"}</td>
                 <td>{r.result_rank_category ?? "—"}</td>
@@ -153,9 +209,9 @@ export function ResultsPage() {
                 </td>
               </tr>
             ))}
-            {results.length === 0 && (
+            {sortedResults.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ color: "var(--text-muted)", padding: 12 }}>
+                <td colSpan={9} style={{ color: "var(--text-muted)", padding: 12 }}>
                   Aucun résultat.
                 </td>
               </tr>
