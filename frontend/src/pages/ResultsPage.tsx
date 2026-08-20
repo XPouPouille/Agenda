@@ -46,6 +46,7 @@ export function ResultsPage() {
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [disciplineFilter, setDisciplineFilter] = useState("");
   const [yearFilter, setYearFilter] = useState("");
+  const [formatFilter, setFormatFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -63,18 +64,40 @@ export function ResultsPage() {
       .catch(console.error);
   }, [disciplineFilter, yearFilter]);
 
+  useEffect(() => {
+    setFormatFilter("");
+  }, [disciplineFilter, yearFilter]);
+
   const years = useMemo(() => {
     const set = new Set(results.map((c) => new Date(c.event_date).getFullYear()));
     return Array.from(set).sort((a, b) => b - a);
   }, [results]);
 
+  const formatOptions = useMemo(() => {
+    const formats = Array.from(new Set(results.map((r) => r.format_type).filter((f): f is NonNullable<typeof f> => f != null)))
+      .sort((a, b) => (FORMAT_RANK.get(a) ?? 0) - (FORMAT_RANK.get(b) ?? 0))
+      .map((f) => ({ value: `f:${f}`, label: f }));
+    const distances = Array.from(new Set(results.map((r) => r.distance_km).filter((d): d is number => d != null)))
+      .sort((a, b) => a - b)
+      .map((d) => ({ value: `d:${d}`, label: `${d} km` }));
+    return [...formats, ...distances];
+  }, [results]);
+
+  const filteredResults = useMemo(() => {
+    if (!formatFilter) return results;
+    const [kind, raw] = formatFilter.split(":");
+    return results.filter((r) =>
+      kind === "f" ? r.format_type === raw : r.distance_km === Number(raw)
+    );
+  }, [results, formatFilter]);
+
   const disciplineNames = useMemo(
-    () => Array.from(new Set(results.map((r) => r.discipline.name))),
-    [results]
+    () => Array.from(new Set(filteredResults.map((r) => r.discipline.name))),
+    [filteredResults]
   );
 
   const sortedResults = useMemo(() => {
-    const sorted = [...results].sort((a, b) => {
+    const sorted = [...filteredResults].sort((a, b) => {
       switch (sortKey) {
         case "distance":
           return compareNullable(a.distance_km, b.distance_km, (x, y) => x - y);
@@ -90,7 +113,7 @@ export function ResultsPage() {
       }
     });
     return sortDir === "asc" ? sorted : sorted.reverse();
-  }, [results, sortKey, sortDir]);
+  }, [filteredResults, sortKey, sortDir]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -107,14 +130,14 @@ export function ResultsPage() {
   }
 
   const chartData = useMemo(() => {
-    const sorted = [...results]
+    const sorted = [...filteredResults]
       .filter((r) => timeToSeconds(r.result_time) !== null)
       .sort((a, b) => a.event_date.localeCompare(b.event_date));
     return sorted.map((r) => ({
       date: new Date(r.event_date).toLocaleDateString("fr-FR"),
       [r.discipline.name]: timeToSeconds(r.result_time),
     }));
-  }, [results]);
+  }, [filteredResults]);
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
@@ -132,6 +155,18 @@ export function ResultsPage() {
           {years.map((y) => (
             <option key={y} value={y}>
               {y}
+            </option>
+          ))}
+        </select>
+        <select
+          value={formatFilter}
+          onChange={(e) => setFormatFilter(e.target.value)}
+          disabled={formatOptions.length === 0}
+        >
+          <option value="">Tous formats/distances</option>
+          {formatOptions.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
             </option>
           ))}
         </select>
